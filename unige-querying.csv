@@ -1,7 +1,8 @@
 name,description,query,id,parentId,isFolder
-Unige,,,0,,true
-20 minutes,,,1,0,true
-Movies,,,2,0,true
+CLEAN DB,,MATCH (p) DETACH DELETE p,0,,false
+Unige querying,,,1,,true
+20 minutes,,,2,1,true
+Movies,,,3,1,true
 Import,,"CREATE CONSTRAINT IF NOT EXISTS FOR (p:Person) REQUIRE (p.name) IS UNIQUE;
 CREATE INDEX IF NOT EXISTS FOR (p:Person) ON (p.born);
 CREATE CONSTRAINT IF NOT EXISTS FOR (m:Movie) REQUIRE (m.title) IS UNIQUE;
@@ -511,10 +512,7 @@ CREATE
 (JessicaThompson)-[:REVIEWED {summary:""Slapstick redeemed only by the Robin Williams and Gene Hackman's stellar performances"", rating:45}]->(TheBirdcage),
 (JessicaThompson)-[:REVIEWED {summary:'A solid romp', rating:68}]->(TheDaVinciCode),
 (JamesThompson)-[:REVIEWED {summary:'Fun, but a little far fetched', rating:65}]->(TheDaVinciCode),
-(JessicaThompson)-[:REVIEWED {summary:'You had me at Jerry', rating:92}]->(JerryMaguire);",3,2,false
-Cost of change I,,,4,0,true
-Cost of change II,,,5,0,true
-CLEAN DB,,MATCH (p) DETACH DELETE p,6,0,false
+(JessicaThompson)-[:REVIEWED {summary:'You had me at Jerry', rating:92}]->(JerryMaguire);",4,3,false
 Import,,"CREATE (b:Bank:Company {id:1, name: ""Fideuram Bank""})
 CREATE (co1:Country {id:1, name: ""Italy""})
 CREATE (co2:Country {id:2, name: ""Panama""})
@@ -538,46 +536,16 @@ MERGE (a1)-[:IS_IN]->(co1)
 MERGE (a2)-[:IS_IN]->(co2)
 MERGE (a3)-[:IS_IN]->(co1)
 MERGE (c1)-[:HAS_SUBSIDIARY]->(c2)
-RETURN b;",7,1,false
+RETURN b;",5,2,false
 Bank to panama,,"MATCH sg=(b:Bank WHERE b.name = ""Fideuram Bank"")-[*]-(c:Country WHERE c.name = ""Panama"")
-RETURN sg;",8,1,false
+RETURN sg;",6,2,false
 Bank to panama (shortest),,"MATCH sg=shortestPath( (b:Bank WHERE b.name = ""Fideuram Bank"")-[*]-(c:Country WHERE c.name = ""Panama"") )
-RETURN sg;",9,1,false
+RETURN sg;",7,2,false
 The usual suspect,,"MATCH sg=(b:Bank WHERE b.name = ""Fideuram Bank"")-[*]-(p:Person WHERE p.name = ""Donald J. Trump"")-[*]-(c:Country WHERE c.name = ""Panama"")
-RETURN sg;",10,1,false
+RETURN sg;",8,2,false
 Any person will do,,"MATCH (b:Bank WHERE b.name = ""Fideuram Bank"")-[*]-(x:Person)-[*]-(c:Country WHERE c.name = ""Panama"")
-RETURN DISTINCT x.name as suspect;",11,1,false
+RETURN DISTINCT x.name as suspect;",9,2,false
 Flexible model,,"MATCH (p:Person WHERE p.name = ""Stefano Ottolenghi"")
-SET p:Fraudster;",12,1,false
+SET p:Fraudster;",10,2,false
 Fraudsters,,"MATCH (f:Fraudster)
-RETURN f;",13,1,false
-Add genres,,"WITH ['Thriller', 'Comedy', 'Noir', 'Action', 'Romance', 'Children', 'Anime', 'Documentary'] AS genres
-WITH genres, size(genres)-1 AS size
-WITH genres, size, toInteger(round(rand()*size)) AS entry, toInteger(round(rand()*size)) AS next
-MATCH (m:Movie) 
-SET m.genres = [genres[entry], genres[(entry+next)%size]]",14,4,false
-The issue,,"MATCH (m:Movie) RETURN m.title, m.genres LIMIT 5;",15,4,false
-Set schema,,CREATE CONSTRAINT uniqueGenre IF NOT EXISTS FOR (g:Genre) REQUIRE (g.name) IS UNIQUE;,16,4,false
-Remodel,,"MATCH (m:Movie WHERE m.genres IS NOT NULL)
-UNWIND m.genres AS theGenre
-MERGE (g:Genre {name: theGenre})
-MERGE (m)-[:HAS_GENRE]->(g)
-REMOVE m.genres",17,4,false
-"It's always The Matrix, isn't it?",,"MATCH sg=(m:Movie WHERE m.title = ""The Matrix"")-[:HAS_GENRE]->(:Genre) RETURN sg;",18,4,false
-Yet another fix,,"CALL apoc.periodic.iterate('
-  MATCH (m:Movie)-[hg:HAS_GENRE]->(g:Genre) RETURN m,g
-','
-  CALL apoc.create.addLabels( id(m), [ g.name ] ) YIELD node
-  RETURN count(*); 
-',{batchSize:2000, parallel:false});",19,5,false
-Cleanup,,"CALL apoc.periodic.commit(
-  ""MATCH ()-[r:HAS_GENRE]->() WITH r LIMIT $limit DELETE r RETURN count(*)"",
-  {limit:2000}
-);
-CALL apoc.periodic.commit(
-  ""MATCH (n:Genre) WITH n LIMIT $limit DELETE n RETURN count(*)"",
-  {limit:2000}
-);",20,5,false
-Relics,,DROP CONSTRAINT uniqueGenre;,21,5,false
-"It's always The Matrix, isn't it?",,"MATCH (m:Movie WHERE m.title = ""The Matrix"") RETURN labels(m);",22,5,false
-Harness the power,,MATCH (m:Movie&Children&Comedy) RETURN m LIMIT 5;,23,5,false
+RETURN f;",11,2,false
