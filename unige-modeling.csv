@@ -1,0 +1,35 @@
+name,description,query,id,parentId,isFolder
+CLEAN DB,,MATCH (p) DETACH DELETE p,0,,false
+Cost of change I,,,1,2,true
+Cost of change II,,,3,2,true
+Unige modeling,,,2,,true
+Add genres,,"WITH ['Thriller', 'Comedy', 'Noir', 'Action', 'Romance', 'Children', 'Anime', 'Documentary'] AS genres
+WITH genres, size(genres)-1 AS size
+WITH genres, size, toInteger(round(rand()*size)) AS entry, toInteger(round(rand()*size)) AS next
+MATCH (m:Movie) 
+SET m.genres = [genres[entry], genres[(entry+next)%size]]",4,1,false
+The issue,,"MATCH (m:Movie) RETURN m.title, m.genres LIMIT 5;",5,1,false
+Set schema,,CREATE CONSTRAINT uniqueGenre IF NOT EXISTS FOR (g:Genre) REQUIRE (g.name) IS UNIQUE;,6,1,false
+Remodel,,"MATCH (m:Movie WHERE m.genres IS NOT NULL)
+UNWIND m.genres AS theGenre
+MERGE (g:Genre {name: theGenre})
+MERGE (m)-[:HAS_GENRE]->(g)
+REMOVE m.genres",7,1,false
+"It's always The Matrix, isn't it?",,"MATCH sg=(m:Movie WHERE m.title = ""The Matrix"")-[:HAS_GENRE]->(:Genre) RETURN sg;",8,1,false
+Yet another fix,,"CALL apoc.periodic.iterate('
+  MATCH (m:Movie)-[hg:HAS_GENRE]->(g:Genre) RETURN m,g
+','
+  CALL apoc.create.addLabels( id(m), [ g.name ] ) YIELD node
+  RETURN count(*); 
+',{batchSize:2000, parallel:false});",9,3,false
+Cleanup,,"CALL apoc.periodic.commit(
+  ""MATCH ()-[r:HAS_GENRE]->() WITH r LIMIT $limit DELETE r RETURN count(*)"",
+  {limit:2000}
+);
+CALL apoc.periodic.commit(
+  ""MATCH (n:Genre) WITH n LIMIT $limit DELETE n RETURN count(*)"",
+  {limit:2000}
+);",10,3,false
+Relics,,DROP CONSTRAINT uniqueGenre;,11,3,false
+"It's always The Matrix, isn't it?",,"MATCH (m:Movie WHERE m.title = ""The Matrix"") RETURN labels(m);",12,3,false
+Harness the power,,MATCH (m:Movie&Children&Comedy) RETURN m LIMIT 5;,13,3,false
